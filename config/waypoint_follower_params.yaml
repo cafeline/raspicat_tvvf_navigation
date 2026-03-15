@@ -3,7 +3,7 @@ waypoint_follower_node:
     # Path to waypoint CSV file
     # Note: When launching without a launch file, this path must be absolute or relative to the execution directory
     # Launch files will override this with proper package path resolution
-    waypoint_csv_path: "/home/ryo/ros2_ws/src/raspicat_tvvf_navigation/maps/tsudanuma_WP.csv"
+    waypoint_csv_path: "/home/ryo/ros2_ws/src/waypoint_follower/maps/tsudanuma_WP.csv"
 
     # Waypoint tolerance (strict = default, loose = command \"loose\")
     position_tolerance_strict: 0.3  # meters
