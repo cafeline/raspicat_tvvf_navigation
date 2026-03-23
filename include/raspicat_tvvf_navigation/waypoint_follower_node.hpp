@@ -62,6 +62,7 @@ private:
 
   // Timestamp initialization
   void initializeTimestamps();
+  void publishGoalForWaypoint(const Waypoint & waypoint);
 
   // Command execution
   void executeWaypointCommand(const std::string& command);
@@ -134,6 +135,7 @@ private:
   // State variables
   bool paused_;
   rclcpp::Time goal_sent_time_;
+  int active_goal_waypoint_id_{-1};
   rclcpp::Time wait_start_time_;
   double wait_duration_;
   WaitReason wait_reason_;
@@ -147,6 +149,8 @@ protected:
   void setStateForTest(NavigationState state) { current_state_ = state; }
   NavigationState getStateForTest() const { return current_state_; }
   void markReachedForTest() { waypoint_manager_->markCurrentReached(); }
+  void setGoalTimeoutForTest(double timeout_sec) { goal_timeout_ = timeout_sec; }
+  void setMaxRetryCountForTest(int max_retry_count) { max_retry_count_ = max_retry_count; }
 
   // Main control loop
   void controlLoop();

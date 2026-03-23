@@ -100,6 +100,8 @@ public:
 private:
   std::vector<Waypoint> waypoints_;
   size_t current_index_;
+  size_t completed_count_{0};
+  size_t skipped_count_{0};
   double position_tolerance_strict_;
   double orientation_tolerance_strict_;
   double position_tolerance_loose_;

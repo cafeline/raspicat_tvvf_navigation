@@ -136,7 +136,10 @@ void WaypointFollowerNode::controlLoop()
     return;
   }
 
-  const auto robot_pose = getRobotPose();
+  std::optional<geometry_msgs::msg::Pose> robot_pose = std::nullopt;
+  if (current_state_ == NavigationState::NAVIGATING) {
+    robot_pose = getRobotPose();
+  }
 
   switch (current_state_) {
     case NavigationState::IDLE:
@@ -234,6 +237,13 @@ void WaypointFollowerNode::handleNavigatingState(const std::optional<geometry_ms
     return;
   }
 
+  const bool is_new_goal = active_goal_waypoint_id_ != current_wp->id;
+  if (is_new_goal) {
+    publishGoalForWaypoint(*current_wp);
+    goal_sent_time_ = this->now();
+    active_goal_waypoint_id_ = current_wp->id;
+  }
+
   // Check timeout
   if ((this->now() - goal_sent_time_).seconds() > goal_timeout_) {
     RCLCPP_WARN(this->get_logger(), "Goal timeout for waypoint %d", current_wp->id);
@@ -259,16 +269,9 @@ void WaypointFollowerNode::handleNavigatingState(const std::optional<geometry_ms
                 current_wp->id,
                 waypoint_manager_->getCurrentRetryCount() + 1,
                 max_retry_count_);
+    publishGoalForWaypoint(*current_wp);
+    goal_sent_time_ = this->now();
   }
-
-  // Send goal pose to tvvf_vo_c
-  auto goal_msg = geometry_msgs::msg::PoseStamped();
-  goal_msg.header.stamp = this->now();
-  goal_msg.header.frame_id = global_frame_;
-  goal_msg.pose = current_wp->pose;
-
-  goal_pose_pub_->publish(goal_msg);
-  goal_sent_time_ = this->now();
 }
 
 void WaypointFollowerNode::handleWaypointReachedState()
@@ -603,6 +606,15 @@ std::optional<geometry_msgs::msg::Pose> WaypointFollowerNode::getRobotPose()
   }
 }
 
+void WaypointFollowerNode::publishGoalForWaypoint(const Waypoint & waypoint)
+{
+  auto goal_msg = geometry_msgs::msg::PoseStamped();
+  goal_msg.header.stamp = this->now();
+  goal_msg.header.frame_id = global_frame_;
+  goal_msg.pose = waypoint.pose;
+  goal_pose_pub_->publish(goal_msg);
+}
+
 void WaypointFollowerNode::transitionToState(NavigationState new_state)
 {
   if (current_state_ != new_state) {
@@ -610,6 +622,9 @@ void WaypointFollowerNode::transitionToState(NavigationState new_state)
                 stateToString(current_state_).c_str(),
                 stateToString(new_state).c_str());
     current_state_ = new_state;
+  }
+  if (new_state != NavigationState::NAVIGATING) {
+    active_goal_waypoint_id_ = -1;
   }
 }
 

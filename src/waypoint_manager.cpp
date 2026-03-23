@@ -24,6 +24,8 @@ bool WaypointManager::loadWaypoints(const std::string& filename)
   try {
     waypoints_ = CSVReader::readWaypoints(filename);
     current_index_ = 0;
+    completed_count_ = 0;
+    skipped_count_ = 0;
     return true;
   } catch (const std::exception& e) {
     RCLCPP_ERROR(rclcpp::get_logger("waypoint_manager"),
@@ -87,7 +89,10 @@ double WaypointManager::getOrientationDiff(const geometry_msgs::msg::Pose& curre
 void WaypointManager::markCurrentReached()
 {
   if (current_index_ < waypoints_.size()) {
-    waypoints_[current_index_].reached = true;
+    if (!waypoints_[current_index_].reached) {
+      waypoints_[current_index_].reached = true;
+      ++completed_count_;
+    }
     current_index_++;
   }
 }
@@ -95,7 +100,10 @@ void WaypointManager::markCurrentReached()
 void WaypointManager::skipCurrentWaypoint()
 {
   if (current_index_ < waypoints_.size()) {
-    waypoints_[current_index_].skipped = true;
+    if (!waypoints_[current_index_].skipped) {
+      waypoints_[current_index_].skipped = true;
+      ++skipped_count_;
+    }
     current_index_++;
   }
 }
@@ -127,24 +135,12 @@ size_t WaypointManager::getTotalWaypoints() const
 
 size_t WaypointManager::getCompletedWaypoints() const
 {
-  size_t count = 0;
-  for (const auto& wp : waypoints_) {
-    if (wp.reached) {
-      count++;
-    }
-  }
-  return count;
+  return completed_count_;
 }
 
 size_t WaypointManager::getSkippedWaypoints() const
 {
-  size_t count = 0;
-  for (const auto& wp : waypoints_) {
-    if (wp.skipped) {
-      count++;
-    }
-  }
-  return count;
+  return skipped_count_;
 }
 
 const std::vector<Waypoint>& WaypointManager::getAllWaypoints() const
@@ -160,6 +156,8 @@ int WaypointManager::getCurrentIndex() const
 void WaypointManager::reset()
 {
   current_index_ = 0;
+  completed_count_ = 0;
+  skipped_count_ = 0;
   for (auto& wp : waypoints_) {
     wp.reached = false;
     wp.skipped = false;
